@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyseur de conformité e-commerce</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      color: #1f2937;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    header h1 { font-size: 1.2rem; font-weight: 700; color: #111827; }
+    header p { font-size: 0.78rem; color: #6b7280; margin-top: 0.1rem; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* API Key banner */
+    #api-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    #api-banner span { font-size: 0.875rem; color: #92400e; flex: 1; min-width: 200px; }
+    #api-banner .api-row { display: flex; gap: 0.5rem; flex: 2; min-width: 280px; }
+    #api-key-input {
+      flex: 1;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: monospace;
+      outline: none;
+    }
+    #api-key-input:focus { border-color: #6366f1; }
+    .btn-save {
+      background: #6366f1; color: #fff; border: none; border-radius: 7px;
+      padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-save:hover { background: #4f46e5; }
+    #api-ok {
+      display: none;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.85rem;
+      color: #166534;
+      margin-bottom: 1.5rem;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #api-ok button { background: none; border: none; color: #6b7280; font-size: 0.75rem; cursor: pointer; margin-left: auto; text-decoration: underline; }
+
+    /* Search */
+    .search-card {
+      background: #fff; border-radius: 12px; padding: 2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 2rem;
+    }
+    .search-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: #374151; }
+    .search-card p { font-size: 0.875rem; color: #6b7280; margin-bottom: 1.25rem; }
+    .search-row { display: flex; gap: 0.75rem; }
+    .search-row input {
+      flex: 1; border: 1.5px solid #d1d5db; border-radius: 8px;
+      padding: 0.65rem 1rem; font-size: 0.95rem; outline: none;
+    }
+    .search-row input:focus { border-color: #6366f1; }
+    .btn-primary {
+      background: #6366f1; color: #fff; border: none; border-radius: 8px;
+      padding: 0.65rem 1.5rem; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    /* Loader */
+    #loader { display: none; text-align: center; padding: 3rem 1rem; }
+    .spinner {
+      width: 48px; height: 48px; border: 4px solid #e5e7eb;
+      border-top-color: #6366f1; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loader p { color: #6b7280; font-size: 0.95rem; }
+    #loader .steps { font-size: 0.8rem; color: #9ca3af; margin-top: 0.5rem; }
+
+    /* Error */
+    #error-box {
+      display: none; background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 1rem 1.25rem; color: #dc2626;
+      font-size: 0.9rem; margin-bottom: 1.5rem;
+    }
+
+    /* Results */
+    #results { display: none; }
+    .results-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .results-header h2 { font-size: 1.05rem; font-weight: 700; color: #111827; }
+    .results-header .url-tag { font-size: 0.8rem; color: #6b7280; margin-top: 0.2rem; }
+    .btn-secondary {
+      background: #fff; color: #374151; border: 1.5px solid #d1d5db;
+      border-radius: 8px; padding: 0.6rem 1.1rem; font-size: 0.875rem;
+      font-weight: 600; cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f9fafb; }
+
+    /* Score gauge */
+    .score-card {
+      background: #fff; border-radius: 12px; padding: 2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex; align-items: center; gap: 2rem;
+      margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .score-gauge { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+    .score-gauge svg { transform: rotate(-90deg); }
+    .score-gauge .score-text {
+      position: absolute; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+    }
+    .score-gauge .score-number { font-size: 2.25rem; font-weight: 800; line-height: 1; }
+    .score-gauge .score-label { font-size: 0.7rem; color: #6b7280; margin-top: 0.2rem; }
+    .score-info { flex: 1; min-width: 200px; }
+    .score-info .verdict { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .score-info .date { font-size: 0.8rem; color: #9ca3af; }
+    .score-bar-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.9rem; font-size: 0.8rem; }
+    .score-bar-label { color: #6b7280; width: 90px; text-align: right; font-size: 0.72rem; }
+    .score-bar-track { flex: 1; background: #e5e7eb; border-radius: 99px; height: 7px; }
+    .score-bar-fill { height: 7px; border-radius: 99px; }
+    .score-bar-val { width: 32px; font-weight: 600; }
+
+    /* Sections */
+    .sections-title { font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
+    .section-card {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 0.75rem; overflow: hidden;
+    }
+    .section-header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.25rem; cursor: pointer; user-select: none;
+    }
+    .section-header:hover { background: #f9fafb; }
+    .section-score-badge {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; flex-shrink: 0; color: #fff;
+    }
+    .section-meta { flex: 1; min-width: 0; }
+    .section-meta .titre { font-weight: 600; font-size: 0.95rem; color: #111827; }
+    .section-meta .ref { font-size: 0.75rem; color: #9ca3af; margin-top: 0.1rem; }
+    .section-progress { width: 110px; flex-shrink: 0; }
+    .section-progress-track { background: #e5e7eb; border-radius: 99px; height: 6px; overflow: hidden; }
+    .section-progress-fill { height: 6px; border-radius: 99px; }
+    .section-progress-label { font-size: 0.7rem; color: #6b7280; text-align: right; margin-top: 0.2rem; }
+    .section-chevron { font-size: 0.75rem; color: #9ca3af; transition: transform 0.2s; flex-shrink: 0; }
+    .section-card.open .section-chevron { transform: rotate(180deg); }
+    .section-body { display: none; padding: 0 1.25rem 1.25rem; border-top: 1px solid #f3f4f6; }
+    .section-card.open .section-body { display: block; }
+
+    /* Items */
+    .item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.65rem 0; border-bottom: 1px solid #f3f4f6; font-size: 0.875rem;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    .item-icon.ok { background: #dcfce7; color: #16a34a; }
+    .item-icon.nok { background: #fee2e2; color: #dc2626; }
+    .item-content { flex: 1; }
+    .item-text { color: #374151; line-height: 1.4; }
+    .item-footer { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 0.15rem 0.55rem; border-radius: 99px; font-size: 0.7rem; font-weight: 600;
+    }
+    .badge-bloquant { background: #fee2e2; color: #dc2626; }
+    .badge-majeur   { background: #ffedd5; color: #ea580c; }
+    .badge-mineur   { background: #f0fdf4; color: #16a34a; }
+    .sanction { font-size: 0.7rem; color: #9ca3af; }
+
+    /* Bottom */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .info-card { background: #fff; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+    .info-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: #111827; }
+    .info-card p { font-size: 0.875rem; color: #4b5563; line-height: 1.6; }
+    .info-card ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .info-card ul li { font-size: 0.875rem; color: #4b5563; display: flex; align-items: flex-start; gap: 0.5rem; }
+    .info-card ul li::before { content: '\2713'; color: #22c55e; font-weight: 700; flex-shrink: 0; }
+
+    @media (max-width: 600px) {
+      .bottom-grid { grid-template-columns: 1fr; }
+      .search-row { flex-direction: column; }
+      .score-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .section-progress { display: none; }
+      #api-banner { flex-direction: column; }
+    }
+
+    @media print {
+      header, .search-card, #api-banner, #api-ok, .results-header .btn-secondary,
+      #loader, #error-box { display: none !important; }
+      body { background: #fff; }
+      #results { display: block !important; }
+      .section-body { display: block !important; }
+      .section-card, .score-card { box-shadow: none; border: 1px solid #e5e7eb; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="8" fill="#6366f1"/>
+    <path d="M10 12h16M10 18h10M10 24h13" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>Analyseur de conformité e-commerce</h1>
+    <p>Droit français — Code de la consommation · LCEN · RGPD · Loi Hamon · Loi Toubon</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- API Key banner -->
+  <div id="api-banner">
+    <span>🔑 Clé API Google AI Studio requise pour l'analyse (stockée localement dans votre navigateur)</span>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="AIzaSy..." autocomplete="off">
+      <button class="btn-save" onclick="saveApiKey()">Enregistrer</button>
+    </div>
+  </div>
+  <div id="api-ok">
+    <span>🔑 Clé API configurée</span>
+    <button onclick="resetApiKey()">Modifier</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <h2>Analyser un site e-commerce</h2>
+    <p>Entrez l'URL du site. L'outil visite automatiquement les pages légales et génère un rapport de conformité.</p>
+    <div class="search-row">
+      <input type="url" id="url-input" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
+      <button class="btn-primary" id="btn-analyser" onclick="lancerAnalyse()">Analyser</button>
+    </div>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <p>Analyse en cours…</p>
+    <p class="steps" id="loader-step">Récupération des pages légales du site</p>
+  </div>
+
+  <div id="results">
+    <div class="results-header">
+      <div>
+        <h2 id="res-titre">Rapport de conformité</h2>
+        <div class="url-tag" id="res-url"></div>
+      </div>
+      <button class="btn-secondary" onclick="window.print()">⬇ Exporter en PDF</button>
+    </div>
+
+    <div class="score-card">
+      <div class="score-gauge">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="58" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+          <circle id="gauge-arc" cx="70" cy="70" r="58" fill="none" stroke="#22c55e"
+            stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="364.4" stroke-dashoffset="364.4"/>
+        </svg>
+        <div class="score-text">
+          <span class="score-number" id="score-number">--</span>
+          <span class="score-label">/100</span>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="verdict" id="verdict-text">—</div>
+        <div class="date" id="date-text"></div>
+        <div id="section-bars"></div>
+      </div>
+    </div>
+
+    <div class="sections-title">Détail par section</div>
+    <div id="sections-container"></div>
+
+    <div class="bottom-grid">
+      <div class="info-card">
+        <h3>⚠ Risques principaux</h3>
+        <p id="resume-risques"></p>
+      </div>
+      <div class="info-card">
+        <h3>✓ Points positifs</h3>
+        <ul id="points-positifs"></ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const CORS_PROXY = 'https://api.allorigins.win/get?url=';
+
+  const PATHS = [
+    '/', '/mentions-legales', '/mentions_legales', '/cgv',
+    '/conditions-generales-de-vente', '/politique-de-confidentialite',
+    '/politique-confidentialite', '/livraison'
+  ];
+
+  const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon : Code de la consommation, LCEN, loi Hamon, loi Toubon, RGPD.
+
+Voici le contenu textuel extrait du site à analyser. Retourne UNIQUEMENT un objet JSON valide, sans markdown ni backticks.
+
+Structure JSON attendue :
+{
+  "score_global": <entier 0-100>,
+  "verdict": "<phrase courte ex: Conformité partielle>",
+  "url_analysee": "<url>",
+  "date_analyse": "<date ISO>",
+  "sections": [
+    {
+      "id": "<id_section>",
+      "titre": "<titre affiché>",
+      "score": <0-100>,
+      "reference_legale": "<ex: art. L221-5 C. conso>",
+      "items": [
+        {
+          "ok": <true|false>,
+          "texte": "<description claire de ce qui est présent ou manquant>",
+          "gravite": "<bloquant|majeur|mineur>",
+          "sanction": "<ex: amende jusqu'à 15 000 €>"
+        }
+      ]
+    }
+  ],
+  "resume_risques": "<2-3 phrases résumant les risques principaux>",
+  "points_positifs": ["<point 1>", "<point 2>"]
+}
+
+Sections à analyser obligatoirement :
+1. id: "mentions_legales", titre: "Mentions légales (LCEN art. 6)"
+   - Nom/raison sociale présent
+   - Adresse siège social
+   - Numéro RCS ou SIREN
+   - Nom directeur de publication
+   - Hébergeur identifié (nom + adresse)
+   - Numéro de téléphone
+   Sanction référence : amende jusqu'à 375 000 €
+
+2. id: "information_precontractuelle", titre: "Information précontractuelle (art. L221-5)"
+   - Caractéristiques essentielles des produits décrites
+   - Prix TTC clairement affiché
+   - Frais de livraison indiqués
+   - Date ou délai de livraison mentionné
+   - Identité et coordonnées du vendeur
+   - Informations sur les garanties légales
+   Sanction référence : amende jusqu'à 3 000 € (personne physique) / 15 000 € (morale)
+
+3. id: "droit_retractation", titre: "Droit de rétractation (art. L221-18)"
+   - Délai de 14 jours clairement mentionné
+   - Formulaire de rétractation fourni ou lien vers formulaire
+   - Conditions de remboursement sous 14 jours expliquées
+   - Exceptions au droit de rétractation listées (art. L221-28)
+   - Information sur les frais de retour
+   Sanction référence : extension du délai à 12 mois si non informé
+
+4. id: "cgv", titre: "Conditions Générales de Vente (art. 1127-1 C. civil)"
+   - CGV présentes et accessibles
+   - Étapes de conclusion du contrat décrites
+   - Moyens de paiement acceptés listés
+   - Modalités de livraison détaillées
+   - Clause de réserve de propriété
+   - Loi applicable et juridiction compétente mentionnées
+   Sanction référence : nullité potentielle du contrat
+
+5. id: "garanties", titre: "Garanties légales (art. L217-3 et s.)"
+   - Garantie légale de conformité 2 ans mentionnée
+   - Garantie des vices cachés (art. 1641 C. civil) mentionnée
+   - Procédure de mise en œuvre des garanties expliquée
+   - Garantie commerciale décrite si proposée
+   - Délai de présomption de 24 mois mentionné
+   Sanction référence : amende jusqu'à 15 000 € / 75 000 €
+
+6. id: "commande_paiement", titre: "Processus de commande (art. L221-14)"
+   - Bouton avec mention "commande avec obligation de paiement" ou équivalent
+   - Récapitulatif de commande avant validation
+   - Accusé de réception de commande prévu
+   - Moyens de paiement sécurisés (mention https/SSL)
+   - Politique de conservation données bancaires conforme CNIL
+   Sanction référence : nullité de la commande possible
+
+7. id: "langue_toubon", titre: "Langue française (loi Toubon 1994)"
+   - Site entièrement en français
+   - Conditions générales en français
+   - Notices produits en français
+   - Pas de termes étrangers non traduits hors exceptions légales
+   Sanction référence : contravention 5e classe (1 500 €)
+
+8. id: "donnees_personnelles", titre: "Données personnelles (RGPD + loi Informatique et Libertés)"
+   - Politique de confidentialité présente
+   - Bandeau cookies avec consentement explicite
+   - Droits des personnes (accès, rectification, suppression) mentionnés
+   - Identité du responsable de traitement indiquée
+   - Durée de conservation des données précisée
+   - Coordonnées DPO si applicable
+   Sanction référence : amende CNIL jusqu'à 20M€ ou 4% CA mondial
+
+Règles de scoring :
+- item ok=true ET gravite=bloquant : +15 points
+- item ok=true ET gravite=majeur : +8 points
+- item ok=true ET gravite=mineur : +3 points
+- item ok=false ET gravite=bloquant : -20 points
+- item ok=false ET gravite=majeur : -10 points
+- item ok=false ET gravite=mineur : -3 points
+- Score section = max(0, min(100, 50 + somme des points))
+- Score global = moyenne pondérée des sections (mentions_legales x1.5, cgv x1.5, autres x1)`;
+
+  // ── API Key management ──────────────────────────────────────────────────────
+
+  function loadApiKey() {
+    const key = localStorage.getItem('gemini_api_key');
+    if (key) {
+      document.getElementById('api-banner').style.display = 'none';
+      document.getElementById('api-ok').style.display = 'flex';
+    } else {
+      document.getElementById('api-banner').style.display = 'flex';
+      document.getElementById('api-ok').style.display = 'none';
+    }
+    return key;
+  }
+
+  function saveApiKey() {
+    const val = document.getElementById('api-key-input').value.trim();
+    if (!val) return;
+    localStorage.setItem('gemini_api_key', val);
+    document.getElementById('api-key-input').value = '';
+    loadApiKey();
+  }
+
+  function resetApiKey() {
+    localStorage.removeItem('gemini_api_key');
+    loadApiKey();
+  }
+
+  loadApiKey();
+
+  // ── Scraping via CORS proxy ─────────────────────────────────────────────────
+
+  async function fetchPageText(baseUrl, urlPath) {
+    const fullUrl = baseUrl.replace(/\/$/, '') + urlPath;
+    try {
+      const resp = await fetch(CORS_PROXY + encodeURIComponent(fullUrl), { signal: AbortSignal.timeout(12000) });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (!data.contents) return null;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+      // Remove scripts, styles, nav, footer noise
+      ['script','style','noscript','nav','footer','header'].forEach(tag => {
+        doc.querySelectorAll(tag).forEach(el => el.remove());
+      });
+      const text = (doc.body || doc.documentElement).innerText || (doc.body || doc.documentElement).textContent || '';
+      return text.trim().length > 80 ? text.trim() : null;
+    } catch { return null; }
+  }
+
+  async function scrapeSite(baseUrl) {
+    const stepEl = document.getElementById('loader-step');
+    const texts = [];
+    for (const p of PATHS) {
+      stepEl.textContent = `Récupération : ${p === '/' ? 'page d\'accueil' : p}`;
+      const text = await fetchPageText(baseUrl, p);
+      if (text) texts.push(`=== PAGE: ${p} ===\n${text}`);
+    }
+    if (texts.length === 0) throw new Error('Impossible d\'accéder au site via le proxy. Vérifiez l\'URL.');
+    let combined = texts.join('\n\n');
+    if (combined.length > 80000) combined = combined.substring(0, 80000);
+    return combined;
+  }
+
+  // ── Gemini API call ─────────────────────────────────────────────────────────
+
+  async function analyseWithGemini(siteContent, url, apiKey) {
+    document.getElementById('loader-step').textContent = 'Analyse juridique IA en cours…';
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const userMessage = `URL du site analysé : ${url}\nDate d'analyse : ${new Date().toISOString()}\n\nContenu extrait du site :\n\n${siteContent}`;
+    const resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-goog-api-key': apiKey },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ parts: [{ text: userMessage }] }],
+        generationConfig: { temperature: 0.1 }
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`API Gemini — ${resp.status}: ${err.substring(0, 200)}`);
+    }
+    const data = await resp.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Réponse vide de l\'API Gemini.');
+    const cleaned = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
+    return JSON.parse(cleaned);
+  }
+
+  // ── Analysis orchestration ──────────────────────────────────────────────────
+
+  async function lancerAnalyse() {
+    const apiKey = loadApiKey();
+    const errBox = document.getElementById('error-box');
+    errBox.style.display = 'none';
+
+    if (!apiKey) {
+      errBox.textContent = 'Veuillez d\'abord enregistrer votre clé API Google AI Studio.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) { errBox.textContent = 'Veuillez saisir une URL.'; errBox.style.display = 'block'; return; }
+    if (!/^https?:\/\//i.test(url)) { errBox.textContent = "L'URL doit commencer par http:// ou https://"; errBox.style.display = 'block'; return; }
+
+    let origin;
+    try { origin = new URL(url).origin; } catch { errBox.textContent = 'URL invalide.'; errBox.style.display = 'block'; return; }
+
+    document.getElementById('btn-analyser').disabled = true;
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('loader').style.display = 'block';
+
+    try {
+      const content = await scrapeSite(origin);
+      const rapport = await analyseWithGemini(content, url, apiKey);
+      afficherRapport(rapport);
+    } catch (e) {
+      errBox.textContent = e.message;
+      errBox.style.display = 'block';
+    } finally {
+      document.getElementById('btn-analyser').disabled = false;
+      document.getElementById('loader').style.display = 'none';
+    }
+  }
+
+  // ── Rendering ───────────────────────────────────────────────────────────────
+
+  function scoreColor(s) {
+    if (s >= 70) return { hex:'#22c55e' };
+    if (s >= 40) return { hex:'#f97316' };
+    return { hex:'#ef4444' };
+  }
+
+  function afficherRapport(data) {
+    const score = data.score_global || 0;
+    const col = scoreColor(score);
+    const circumference = 2 * Math.PI * 58;
+    const arc = document.getElementById('gauge-arc');
+    arc.style.stroke = col.hex;
+    arc.style.strokeDashoffset = circumference - (score / 100) * circumference;
+    const numEl = document.getElementById('score-number');
+    numEl.textContent = score;
+    numEl.style.color = col.hex;
+    document.getElementById('verdict-text').textContent = data.verdict || '';
+    document.getElementById('res-titre').textContent = 'Rapport — ' + (data.url_analysee || '');
+    document.getElementById('res-url').textContent = data.url_analysee || '';
+    try { document.getElementById('date-text').textContent = 'Analysé le ' + new Date(data.date_analyse).toLocaleString('fr-FR',{dateStyle:'long',timeStyle:'short'}); } catch {}
+
+    const barsEl = document.getElementById('section-bars');
+    barsEl.innerHTML = '';
+    (data.sections || []).slice(0,4).forEach(s => {
+      const c = scoreColor(s.score);
+      barsEl.innerHTML += `<div class="score-bar-row"><span class="score-bar-label">${s.titre.split('(')[0].trim()}</span><div class="score-bar-track"><div class="score-bar-fill" style="width:${s.score}%;background:${c.hex}"></div></div><span class="score-bar-val" style="color:${c.hex}">${s.score}</span></div>`;
+    });
+
+    const container = document.getElementById('sections-container');
+    container.innerHTML = '';
+    (data.sections || []).forEach((sec, idx) => {
+      const c = scoreColor(sec.score);
+      const itemsHtml = (sec.items || []).map(item => {
+        const ic = item.ok ? 'ok' : 'nok';
+        const ix = item.ok ? '\u2713' : '\u2717';
+        const bClass = `badge-${item.gravite}`;
+        const gLabel = item.gravite ? item.gravite[0].toUpperCase() + item.gravite.slice(1) : '';
+        return `<div class="item"><div class="item-icon ${ic}">${ix}</div><div class="item-content"><div class="item-text">${esc(item.texte)}</div><div class="item-footer"><span class="badge ${bClass}">${esc(gLabel)}</span>${item.sanction ? `<span class="sanction">${esc(item.sanction)}</span>` : ''}</div></div></div>`;
+      }).join('');
+      const card = document.createElement('div');
+      card.className = 'section-card' + (idx === 0 ? ' open' : '');
+      card.innerHTML = `<div class="section-header" onclick="this.parentElement.classList.toggle('open')"><div class="section-score-badge" style="background:${c.hex}">${sec.score}</div><div class="section-meta"><div class="titre">${esc(sec.titre)}</div><div class="ref">${esc(sec.reference_legale||'')}</div></div><div class="section-progress"><div class="section-progress-track"><div class="section-progress-fill" style="width:${sec.score}%;background:${c.hex}"></div></div><div class="section-progress-label">${sec.score}/100</div></div><span class="section-chevron">&#9660;</span></div><div class="section-body">${itemsHtml}</div>`;
+      container.appendChild(card);
+    });
+
+    document.getElementById('resume-risques').textContent = data.resume_risques || '—';
+    const pp = document.getElementById('points-positifs');
+    pp.innerHTML = '';
+    (data.points_positifs || []).forEach(pt => { const li = document.createElement('li'); li.textContent = pt; pp.appendChild(li); });
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') lancerAnalyse(); });
+  document.getElementById('api-key-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveApiKey(); });
+</script>
+</body>
+</html>
