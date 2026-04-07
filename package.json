@@ -1,0 +1,12 @@
+{
+  "name": "droit",
+  "version": "1.0.0",
+  "description": "Analyseur de conformité juridique pour sites e-commerce français",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
