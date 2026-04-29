@@ -568,7 +568,7 @@ Règles de scoring :
 
   async function analyseWithGemini(siteContent, url, apiKey) {
     document.getElementById('loader-step').textContent = 'Analyse juridique IA en cours…';
-    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
     const userMessage = `URL du site analysé : ${url}\nDate d'analyse : ${new Date().toISOString()}\n\nContenu extrait du site :\n\n${siteContent}`;
     const resp = await fetch(apiUrl, {
       method: 'POST',
