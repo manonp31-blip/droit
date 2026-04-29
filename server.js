@@ -24,6 +24,8 @@ const PORT = process.env.PORT || 3000;
 
 const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon un moteur de règles complet couvrant 12 catégories légales.
 
+RÈGLE ABSOLUE : Tu dois TOUJOURS retourner exactement les 12 sections dans l'ordre indiqué ci-dessous, avec TOUS leurs points (items), qu'ils soient conformes ou non. Si une information est absente du contenu fourni, crée quand même l'item avec ok:false et une description expliquant ce qui manque. Ne résume jamais, ne regroupe jamais, ne saute aucune catégorie.
+
 Voici le contenu textuel extrait du site à analyser. Retourne UNIQUEMENT un objet JSON valide, sans markdown ni backticks.
 
 Structure JSON attendue :
