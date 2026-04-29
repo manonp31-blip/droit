@@ -169,15 +169,30 @@ Principe général : ce qui compte, c'est l'information présente, pas le mot ut
 
 Règle d'or : la loi oblige à informer, pas à utiliser un vocabulaire précis. Un site est conforme si un consommateur lambda peut trouver et comprendre l'information requise, quelle que soit la page et la formulation.
 
-Règles de scoring :
-- item ok=true ET gravite=bloquant : +15 points
-- item ok=true ET gravite=majeur : +8 points
-- item ok=true ET gravite=mineur : +3 points
-- item ok=false ET gravite=bloquant : -20 points
-- item ok=false ET gravite=majeur : -10 points
-- item ok=false ET gravite=mineur : -3 points
-- Score section = max(0, min(100, 50 + somme des points))
-- Score global = moyenne pondérée des sections (mentions_legales x1.5, cgv x1.5, rgpd_cookies x1.2, autres x1)`;
+Règles de scoring — pondération par risque financier :
+
+Étape 1 — Attribuer un coefficient de sanction à chaque item selon l'exposition financière maximale :
+- Coefficient 4 (risque catastrophique : > 300 000 € ou risque pénal) : tout item lié au RGPD/CNIL (20M€ ou 4% CA), prix barrés Omnibus (300 000 € + 2 ans prison), pratiques commerciales trompeuses (300 000 € + 2 ans prison)
+- Coefficient 2.5 (risque élevé : 50 000 € – 300 000 €) : mentions légales LCEN (375 000 €), garanties légales (75 000 €), directive Omnibus hors prix barrés
+- Coefficient 1.5 (risque modéré : 5 000 € – 50 000 €) : information précontractuelle (15 000 €), processus de commande, droit de rétractation, CGV, accessibilité numérique (7 500 €), environnement/greenwashing
+- Coefficient 1 (risque faible : < 5 000 €) : loi Toubon (1 500 €), archivage, sécurité technique
+
+Étape 2 — Calculer la pénalité pondérée de chaque item :
+- ok=true, gravite=bloquant : +15 (les points positifs ne sont pas multipliés)
+- ok=true, gravite=majeur : +8
+- ok=true, gravite=mineur : +3
+- ok=false, gravite=bloquant : −20 × coefficient_sanction
+- ok=false, gravite=majeur : −10 × coefficient_sanction
+- ok=false, gravite=mineur : −3 × coefficient_sanction
+
+Étape 3 — Score section = max(0, min(100, 50 + somme des points pondérés))
+
+Étape 4 — Score global = moyenne pondérée des sections (mentions_legales ×1.5, cgv ×1.5, rgpd_cookies ×1.2, autres ×1)
+
+Exemple concret : un site parfait sur 11 catégories mais sans politique de confidentialité (RGPD) :
+- Item "Politique de confidentialité absente" : ok=false, gravite=bloquant, coefficient=4 → pénalité −80
+- Score section rgpd_cookies = max(0, 50 − 80) = 0
+- Ce seul manquement fait chuter le score global de façon drastique, reflétant le risque réel pour l'entreprise`;
 
 const PATHS_TO_SCRAPE = [
   '/',
