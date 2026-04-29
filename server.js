@@ -253,7 +253,7 @@ async function analyseWithGemini(siteContent, url) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error('GOOGLE_API_KEY manquante dans le fichier .env');
 
-  const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
+  const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
   const userMessage = `URL du site analysé : ${url}\nDate d'analyse : ${new Date().toISOString()}\n\nContenu extrait du site :\n\n${siteContent}`;
 
   const body = {
