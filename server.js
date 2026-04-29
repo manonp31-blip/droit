@@ -20,18 +20,6 @@ if (fs.existsSync(envPath)) {
 const http = require('http');
 const https = require('https');
 
-// Support playwright installed globally or locally
-let chromium;
-try {
-  chromium = require('playwright').chromium;
-} catch {
-  try {
-    chromium = require('/opt/node22/lib/node_modules/playwright').chromium;
-  } catch {
-    chromium = require('/opt/node21/lib/node_modules/playwright').chromium;
-  }
-}
-
 const PORT = process.env.PORT || 3000;
 
 const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon : Code de la consommation, LCEN, loi Hamon, loi Toubon, RGPD.
@@ -153,37 +141,70 @@ const PATHS_TO_SCRAPE = [
   '/livraison'
 ];
 
-// ─── Scraping avec Playwright ────────────────────────────────────────────────
+// ─── Scraping HTTP natif ──────────────────────────────────────────────────────
+
+function fetchPage(url, redirectCount = 0) {
+  if (redirectCount > 5) return Promise.reject(new Error('Trop de redirections'));
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const mod = parsed.protocol === 'https:' ? https : http;
+    const req = mod.request({
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9',
+      },
+      timeout: 10000
+    }, res => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+        res.resume();
+        resolve(fetchPage(new URL(res.headers.location, url).href, redirectCount + 1));
+        return;
+      }
+      if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+      res.setEncoding('utf8');
+      let raw = '';
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => resolve(raw));
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function htmlToText(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 async function scrapeSite(baseUrl) {
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-  });
-
   const collectedTexts = [];
 
-  try {
-    for (const urlPath of PATHS_TO_SCRAPE) {
-      const fullUrl = baseUrl.replace(/\/$/, '') + urlPath;
-      const page = await browser.newPage();
-      try {
-        await page.setExtraHTTPHeaders({
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        });
-        await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        const text = await page.evaluate(() => document.body.innerText);
-        if (text && text.trim().length > 100) {
-          collectedTexts.push(`=== PAGE: ${urlPath} ===\n${text.trim()}`);
-        }
-      } catch {
-        // Page not found or timeout — skip silently
-      } finally {
-        await page.close();
+  for (const urlPath of PATHS_TO_SCRAPE) {
+    const fullUrl = baseUrl.replace(/\/$/, '') + urlPath;
+    try {
+      const html = await fetchPage(fullUrl);
+      const text = htmlToText(html);
+      if (text.length > 100) {
+        collectedTexts.push(`=== PAGE: ${urlPath} ===\n${text}`);
       }
+    } catch {
+      // Page introuvable ou timeout — on ignore
     }
-  } finally {
-    await browser.close();
   }
 
   if (collectedTexts.length === 0) {
@@ -309,7 +330,22 @@ const server = http.createServer(async (req, res) => {
       return jsonResponse(res, 400, { error: 'Corps de requête invalide.' });
     }
 
-    const { url } = body;
+    const { url, content } = body;
+
+    // Mode saisie manuelle : content fourni directement, pas besoin de scraper
+    if (content && typeof content === 'string' && content.trim().length > 50) {
+      const siteContent = content.trim().substring(0, 80000);
+      const siteUrl = (url && typeof url === 'string') ? url : 'Saisie manuelle';
+      try {
+        console.log('[Analyse] Mode manuel — contenu fourni directement');
+        const rapport = await analyseWithGemini(siteContent, siteUrl);
+        console.log(`[Analyse] Score global : ${rapport.score_global}`);
+        return jsonResponse(res, 200, rapport);
+      } catch (err) {
+        console.error('[Erreur]', err.message);
+        return jsonResponse(res, 500, { error: 'Erreur lors de l\'analyse : ' + err.message });
+      }
+    }
 
     if (!url || typeof url !== 'string') {
       return jsonResponse(res, 400, { error: 'URL manquante.' });
