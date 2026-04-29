@@ -461,34 +461,23 @@
       margin-bottom: 1rem;
     }
 
-    /* --- Tabs --- */
-    .tabs {
+    /* --- Divider --- */
+    .or-divider {
       display: flex;
-      gap: 0;
-      border-bottom: 2px solid #e5e7eb;
-      margin-bottom: 1.5rem;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      color: #9ca3af;
+      font-size: 0.8rem;
     }
 
-    .tab-btn {
-      background: none;
-      border: none;
-      padding: 0.65rem 1.25rem;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #6b7280;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.15s, border-color 0.15s;
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
     }
-
-    .tab-btn.active {
-      color: #6366f1;
-      border-bottom-color: #6366f1;
-    }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
 
     /* --- Manual form --- */
     .manual-grid {
@@ -589,52 +578,45 @@
   <div class="search-card">
     <h2>Analyser un site e-commerce</h2>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('url')">Par URL</button>
-      <button class="tab-btn" onclick="switchTab('manuel')">Saisie manuelle</button>
+    <!-- Section URL -->
+    <p>Entrez l'URL du site. L'outil tentera de récupérer automatiquement les pages légales.</p>
+    <div class="search-row">
+      <input type="url" id="url-input" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
+      <button class="btn-primary" id="btn-analyser" onclick="lancerAnalyse()">Analyser</button>
     </div>
 
-    <!-- Onglet URL -->
-    <div class="tab-panel active" id="tab-url">
-      <p>Entrez l'URL du site. L'outil tentera de récupérer automatiquement les pages légales.</p>
-      <div class="search-row">
-        <input type="url" id="url-input" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
-        <button class="btn-primary" id="btn-analyser" onclick="lancerAnalyse()">Analyser</button>
+    <div class="or-divider">ou saisir manuellement</div>
+
+    <!-- Section saisie manuelle -->
+    <p style="margin-bottom:1rem">Copiez-collez le contenu textuel des pages légales directement depuis votre navigateur.</p>
+    <div class="manual-grid">
+      <div class="manual-field">
+        <label>Mentions légales <span>(LCEN)</span></label>
+        <textarea id="txt-mentions" placeholder="Copiez ici le contenu de votre page Mentions légales…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>CGV <span>(Conditions générales de vente)</span></label>
+        <textarea id="txt-cgv" placeholder="Copiez ici le contenu de votre page CGV…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>Politique de confidentialité <span>(RGPD)</span></label>
+        <textarea id="txt-rgpd" placeholder="Copiez ici le contenu de votre politique de confidentialité…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>Livraison &amp; retours <span>(optionnel)</span></label>
+        <textarea id="txt-livraison" placeholder="Copiez ici le contenu de votre page livraison / retours…"></textarea>
       </div>
     </div>
-
-    <!-- Onglet Manuel -->
-    <div class="tab-panel" id="tab-manuel">
-      <p>Copiez-collez le contenu textuel des pages légales directement depuis votre navigateur.</p>
-      <div class="manual-grid">
-        <div class="manual-field">
-          <label>Mentions légales <span>(LCEN)</span></label>
-          <textarea id="txt-mentions" placeholder="Copiez ici le contenu de votre page Mentions légales…"></textarea>
-        </div>
-        <div class="manual-field">
-          <label>CGV <span>(Conditions générales de vente)</span></label>
-          <textarea id="txt-cgv" placeholder="Copiez ici le contenu de votre page CGV…"></textarea>
-        </div>
-        <div class="manual-field">
-          <label>Politique de confidentialité <span>(RGPD)</span></label>
-          <textarea id="txt-rgpd" placeholder="Copiez ici le contenu de votre politique de confidentialité…"></textarea>
-        </div>
-        <div class="manual-field">
-          <label>Livraison &amp; retours <span>(optionnel)</span></label>
-          <textarea id="txt-livraison" placeholder="Copiez ici le contenu de votre page livraison / retours…"></textarea>
-        </div>
+    <div class="manual-field" style="margin-bottom:1rem">
+      <label>Autres pages <span>(accueil, fiche produit… — optionnel)</span></label>
+      <textarea id="txt-autres" placeholder="Tout autre contenu utile à l'analyse…" style="min-height:80px"></textarea>
+    </div>
+    <div class="manual-url-row">
+      <div class="url-field">
+        <label>URL du site <span>(pour le rapport — optionnel)</span></label>
+        <input type="url" id="url-manuel" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
       </div>
-      <div class="manual-field" style="margin-bottom:1rem">
-        <label>Autres pages <span>(accueil, fiche produit… — optionnel)</span></label>
-        <textarea id="txt-autres" placeholder="Tout autre contenu utile à l'analyse…" style="min-height:80px"></textarea>
-      </div>
-      <div class="manual-url-row">
-        <div class="url-field">
-          <label>URL du site <span>(pour le rapport — optionnel)</span></label>
-          <input type="url" id="url-manuel" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
-        </div>
-        <button class="btn-primary" id="btn-analyser-manuel" onclick="lancerAnalyseManuelle()">Analyser</button>
-      </div>
+      <button class="btn-primary" id="btn-analyser-manuel" onclick="lancerAnalyseManuelle()">Analyser</button>
     </div>
   </div>
 
@@ -869,15 +851,6 @@
   document.getElementById('url-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') lancerAnalyse();
   });
-
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-      btn.classList.toggle('active', (tab === 'url' && i === 0) || (tab === 'manuel' && i === 1));
-    });
-    document.getElementById('tab-url').classList.toggle('active', tab === 'url');
-    document.getElementById('tab-manuel').classList.toggle('active', tab === 'manuel');
-    document.getElementById('error-box').style.display = 'none';
-  }
 
   async function lancerAnalyseManuelle() {
     const errBox = document.getElementById('error-box');
