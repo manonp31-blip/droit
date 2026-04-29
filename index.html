@@ -395,6 +395,8 @@
 
   const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon un moteur de règles complet couvrant 12 catégories légales.
 
+RÈGLE ABSOLUE : Tu dois TOUJOURS retourner exactement les 12 sections dans l'ordre indiqué ci-dessous, avec TOUS leurs points (items), qu'ils soient conformes ou non. Si une information est absente du contenu fourni, crée quand même l'item avec ok:false et une description expliquant ce qui manque. Ne résume jamais, ne regroupe jamais, ne saute aucune catégorie.
+
 Voici le contenu textuel extrait du site à analyser. Retourne UNIQUEMENT un objet JSON valide, sans markdown ni backticks.
 
 Structure JSON attendue :
@@ -709,7 +711,7 @@ Règles de scoring :
         return `<div class="item"><div class="item-icon ${ic}">${ix}</div><div class="item-content"><div class="item-text">${esc(item.texte)}</div><div class="item-footer"><span class="badge ${bClass}">${esc(gLabel)}</span>${item.sanction ? `<span class="sanction">${esc(item.sanction)}</span>` : ''}</div></div></div>`;
       }).join('');
       const card = document.createElement('div');
-      card.className = 'section-card open';
+      card.className = 'section-card' + (idx === 0 ? ' open' : '');
       card.innerHTML = `<div class="section-header" onclick="this.parentElement.classList.toggle('open')"><div class="section-score-badge" style="background:${c.hex}">${sec.score}</div><div class="section-meta"><div class="titre">${esc(sec.titre)}</div><div class="ref">${esc(sec.reference_legale||'')}</div></div><div class="section-progress"><div class="section-progress-track"><div class="section-progress-fill" style="width:${sec.score}%;background:${c.hex}"></div></div><div class="section-progress-label">${sec.score}/100</div></div><span class="section-chevron">&#9660;</span></div><div class="section-body">${itemsHtml}</div>`;
       container.appendChild(card);
     });
