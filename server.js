@@ -330,7 +330,22 @@ const server = http.createServer(async (req, res) => {
       return jsonResponse(res, 400, { error: 'Corps de requête invalide.' });
     }
 
-    const { url } = body;
+    const { url, content } = body;
+
+    // Mode saisie manuelle : content fourni directement, pas besoin de scraper
+    if (content && typeof content === 'string' && content.trim().length > 50) {
+      const siteContent = content.trim().substring(0, 80000);
+      const siteUrl = (url && typeof url === 'string') ? url : 'Saisie manuelle';
+      try {
+        console.log('[Analyse] Mode manuel — contenu fourni directement');
+        const rapport = await analyseWithGemini(siteContent, siteUrl);
+        console.log(`[Analyse] Score global : ${rapport.score_global}`);
+        return jsonResponse(res, 200, rapport);
+      } catch (err) {
+        console.error('[Erreur]', err.message);
+        return jsonResponse(res, 500, { error: 'Erreur lors de l\'analyse : ' + err.message });
+      }
+    }
 
     if (!url || typeof url !== 'string') {
       return jsonResponse(res, 400, { error: 'URL manquante.' });
