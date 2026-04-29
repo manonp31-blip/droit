@@ -799,7 +799,7 @@
       }).join('');
 
       const card = document.createElement('div');
-      card.className = 'section-card' + (idx === 0 ? ' open' : '');
+      card.className = 'section-card open';
       card.innerHTML = `
         <div class="section-header" onclick="toggleSection(this)">
           <div class="section-score-badge" style="background:${c.hex}">${sec.score}</div>
