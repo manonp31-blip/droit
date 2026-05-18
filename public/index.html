@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analyseur de conformité e-commerce</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -461,6 +462,94 @@
       margin-bottom: 1rem;
     }
 
+    /* --- Divider --- */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    /* --- Manual form --- */
+    .manual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 600px) { .manual-grid { grid-template-columns: 1fr; } }
+
+    .manual-field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.35rem;
+    }
+
+    .manual-field label span {
+      font-weight: 400;
+      color: #9ca3af;
+    }
+
+    .manual-field textarea {
+      width: 100%;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.85rem;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      color: #1f2937;
+      min-height: 110px;
+    }
+
+    .manual-field textarea:focus { border-color: #6366f1; }
+
+    .manual-url-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    .manual-url-row .url-field {
+      flex: 1;
+    }
+
+    .manual-url-row label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.35rem;
+    }
+
+    .manual-url-row input {
+      width: 100%;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .manual-url-row input:focus { border-color: #6366f1; }
+
     /* --- Print --- */
     @media print {
       header, .search-card, .export-row, #loader, #error-box { display: none !important; }
@@ -489,10 +578,46 @@
 
   <div class="search-card">
     <h2>Analyser un site e-commerce</h2>
-    <p>Entrez l'URL du site à analyser. L'outil visitera automatiquement les pages clés et générera un rapport de conformité juridique détaillé.</p>
+
+    <!-- Section URL -->
+    <p>Entrez l'URL du site. L'outil tentera de récupérer automatiquement les pages légales.</p>
     <div class="search-row">
       <input type="url" id="url-input" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
       <button class="btn-primary" id="btn-analyser" onclick="lancerAnalyse()">Analyser</button>
+    </div>
+
+    <div class="or-divider">ou saisir manuellement</div>
+
+    <!-- Section saisie manuelle -->
+    <p style="margin-bottom:1rem">Copiez-collez le contenu textuel des pages légales directement depuis votre navigateur.</p>
+    <div class="manual-grid">
+      <div class="manual-field">
+        <label>Mentions légales <span>(LCEN)</span></label>
+        <textarea id="txt-mentions" placeholder="Copiez ici le contenu de votre page Mentions légales…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>CGV <span>(Conditions générales de vente)</span></label>
+        <textarea id="txt-cgv" placeholder="Copiez ici le contenu de votre page CGV…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>Politique de confidentialité <span>(RGPD)</span></label>
+        <textarea id="txt-rgpd" placeholder="Copiez ici le contenu de votre politique de confidentialité…"></textarea>
+      </div>
+      <div class="manual-field">
+        <label>Livraison &amp; retours <span>(optionnel)</span></label>
+        <textarea id="txt-livraison" placeholder="Copiez ici le contenu de votre page livraison / retours…"></textarea>
+      </div>
+    </div>
+    <div class="manual-field" style="margin-bottom:1rem">
+      <label>Autres pages <span>(accueil, fiche produit… — optionnel)</span></label>
+      <textarea id="txt-autres" placeholder="Tout autre contenu utile à l'analyse…" style="min-height:80px"></textarea>
+    </div>
+    <div class="manual-url-row">
+      <div class="url-field">
+        <label>URL du site <span>(pour le rapport — optionnel)</span></label>
+        <input type="url" id="url-manuel" placeholder="https://www.exemple.fr" autocomplete="off" spellcheck="false">
+      </div>
+      <button class="btn-primary" id="btn-analyser-manuel" onclick="lancerAnalyseManuelle()">Analyser</button>
     </div>
   </div>
 
@@ -723,10 +848,58 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Allow Enter key in input
+  // Allow Enter key in URL input
   document.getElementById('url-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') lancerAnalyse();
   });
+
+  async function lancerAnalyseManuelle() {
+    const errBox = document.getElementById('error-box');
+    errBox.style.display = 'none';
+
+    const sections = [
+      { id: 'txt-mentions', label: 'Mentions légales' },
+      { id: 'txt-cgv', label: 'CGV' },
+      { id: 'txt-rgpd', label: 'Politique de confidentialité' },
+      { id: 'txt-livraison', label: 'Livraison & retours' },
+      { id: 'txt-autres', label: 'Autres pages' },
+    ];
+
+    const parts = sections
+      .map(s => ({ label: s.label, text: document.getElementById(s.id).value.trim() }))
+      .filter(s => s.text.length > 0);
+
+    if (parts.length === 0) {
+      errBox.textContent = 'Veuillez coller au moins le contenu d\'une page légale.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const content = parts.map(p => `=== ${p.label} ===\n${p.text}`).join('\n\n');
+    const url = document.getElementById('url-manuel').value.trim() || 'Saisie manuelle';
+
+    document.getElementById('btn-analyser-manuel').disabled = true;
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('loader').style.display = 'block';
+
+    try {
+      const resp = await fetch('/api/analyser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, content })
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Erreur serveur');
+      afficherRapport(data);
+    } catch (err) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    } finally {
+      document.getElementById('btn-analyser-manuel').disabled = false;
+      document.getElementById('loader').style.display = 'none';
+    }
+  }
 </script>
 </body>
 </html>
