@@ -42,10 +42,11 @@ Structure JSON attendue :
       "reference_legale": "<ex: art. L221-5 C. conso>",
       "items": [
         {
-          "ok": <true|false>,
+          "ok": <true|false|"na">,
           "texte": "<description claire de ce qui est présent ou manquant>",
           "gravite": "<bloquant|majeur|mineur>",
-          "sanction": "<ex: amende jusqu'à 15 000 €>"
+          "sanction": "<ex: amende jusqu'à 15 000 €>",
+          "na_raison": "<uniquement si ok='na' : expliquer pourquoi la règle ne s'applique pas>"
         }
       ]
     }
@@ -193,6 +194,36 @@ Principe général : ce qui compte, c'est l'information présente, pas le mot ut
 
 Règle d'or : la loi oblige à informer, pas à utiliser un vocabulaire précis. Un site est conforme si un consommateur lambda peut trouver et comprendre l'information requise, quelle que soit la page et la formulation.
 
+RÈGLE NA — Items non applicables
+
+Utilise ok:"na" (Non Applicable) quand une obligation légale ne peut pas s'appliquer au site analysé en raison de la nature de son activité ou de ses produits.
+
+Cas où ok:"na" est obligatoire (liste non exhaustive) :
+- Indice de réparabilité/durabilité → NA si le site ne vend aucun des produits concernés (smartphones, PC, tablettes, lave-linge, TV, aspirateurs, tondeuses)
+- Bandeau interdiction alcool aux mineurs → NA si le site ne vend pas d'alcool
+- Bouton résiliation en ligne → NA si le site ne propose aucun abonnement
+- Formulaire de rétractation pour contenu numérique → NA si pas de contenu numérique
+- Indice de durabilité TV → NA si le site ne vend pas de téléviseurs
+- Indice de durabilité lave-linge → NA si le site ne vend pas de lave-linge
+- Prix personnalisés par algorithme → NA si aucun indice de personnalisation détectée
+- Clause résiliation abonnement → NA si pas d'abonnement proposé
+- Logo Triman → NA si les emballages ne sont pas visibles ou décrits sur le site
+- Disponibilité pièces détachées → NA si produits non concernés par l'obligation
+
+Règle d'or du NA :
+- ok:"na" uniquement si la règle est structurellement inapplicable à ce type de site
+- ok:false si la règle s'applique mais l'information est absente ou insuffisante
+- En cas de doute (le site pourrait vendre ce type de produit) : utiliser ok:false
+- Ne jamais utiliser ok:"na" pour masquer un manquement réel
+
+Format de l'item NA :
+{
+  "ok": "na",
+  "texte": "Non applicable — [raison courte ex: le site ne vend pas d'alcool]",
+  "gravite": "mineur",
+  "sanction": "Sans objet"
+}
+
 Règles de scoring — pondération par risque financier :
 
 Étape 1 — Attribuer un coefficient de sanction à chaque item selon l'exposition financière maximale :
@@ -208,10 +239,13 @@ Règles de scoring — pondération par risque financier :
 - ok=false, gravite=bloquant : −20 × coefficient_sanction
 - ok=false, gravite=majeur : −10 × coefficient_sanction
 - ok=false, gravite=mineur : −3 × coefficient_sanction
+- ok="na" : 0 (ni bonus ni malus — item exclu du calcul)
 
-Étape 3 — Score section = max(0, min(100, 50 + somme des points pondérés))
+Étape 3 — Score section = max(0, min(100, 50 + somme des points pondérés des items NON-NA))
+Si TOUS les items d'une section sont NA : score section = null (section exclue du score global)
 
 Étape 4 — Score global = moyenne pondérée des sections (mentions_legales ×1.5, cgv ×1.5, rgpd_cookies ×1.2, autres ×1, pratiques_commerciales_loyales ×1.5, archivage_preuve_contrats ×1, responsabilite_droit_applicable ×1)
+Les sections dont le score est null (100% NA) sont exclues de la moyenne pondérée.
 
 Exemple concret : un site parfait sur 11 catégories mais sans politique de confidentialité (RGPD) :
 - Item "Politique de confidentialité absente" : ok=false, gravite=bloquant, coefficient=4 → pénalité −80
