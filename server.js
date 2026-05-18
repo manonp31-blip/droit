@@ -22,9 +22,9 @@ const https = require('https');
 
 const PORT = process.env.PORT || 3000;
 
-const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon un moteur de règles complet couvrant 12 catégories légales.
+const SYSTEM_PROMPT = `Tu es un expert juridique spécialisé en droit du commerce électronique français. Tu analyses des sites e-commerce selon un moteur de règles complet couvrant 15 catégories légales.
 
-RÈGLE ABSOLUE : Tu dois TOUJOURS retourner exactement les 12 sections dans l'ordre indiqué ci-dessous, avec TOUS leurs points (items), qu'ils soient conformes ou non. Si une information est absente du contenu fourni, crée quand même l'item avec ok:false et une description expliquant ce qui manque. Ne résume jamais, ne regroupe jamais, ne saute aucune catégorie.
+RÈGLE ABSOLUE : Tu dois TOUJOURS retourner exactement les 15 sections dans l'ordre indiqué ci-dessous, avec TOUS leurs points (items), qu'ils soient conformes ou non. Si une information est absente du contenu fourni, crée quand même l'item avec ok:false et une description expliquant ce qui manque. Ne résume jamais, ne regroupe jamais, ne saute aucune catégorie.
 
 Voici le contenu textuel extrait du site à analyser. Retourne UNIQUEMENT un objet JSON valide, sans markdown ni backticks.
 
@@ -42,10 +42,11 @@ Structure JSON attendue :
       "reference_legale": "<ex: art. L221-5 C. conso>",
       "items": [
         {
-          "ok": <true|false>,
+          "ok": <true|false|"na">,
           "texte": "<description claire de ce qui est présent ou manquant>",
           "gravite": "<bloquant|majeur|mineur>",
-          "sanction": "<ex: amende jusqu'à 15 000 €>"
+          "sanction": "<ex: amende jusqu'à 15 000 €>",
+          "na_raison": "<uniquement si ok='na' : expliquer pourquoi la règle ne s'applique pas>"
         }
       ]
     }
@@ -156,6 +157,30 @@ Cat. 12 — id: "archivage_preuve", titre: "Archivage & preuve (art. L213-1 C. c
 - Écrit électronique admis comme preuve si intégrité + identification garanties
 Sanction référence : impossibilité de prouver le contrat
 
+Cat. 13 — id: "pratiques_commerciales_loyales", titre: "Pratiques commerciales loyales (art. L121-2 à L121-7 C. conso.)"
+- Absence de faux prix barrés sans référence réelle
+- Absence de fausses urgences systématiques ("plus que 1 en stock" sur tous les produits, "offre expire dans 10 minutes" permanente)
+- Interdiction des cases pré-cochées pour des options payantes
+- Pour la vente d'alcool : bandeau d'interdiction de vente aux mineurs obligatoire
+- Pour les abonnements conclus en ligne : bouton de résiliation en ligne obligatoire, libellé "résilier votre contrat" ou formule analogue, directement accessible (obligatoire depuis le 1er juin 2023 — Loi n°2022-1158)
+- Interdiction du démarchage téléphonique non sollicité (Loi n°2025-594 du 30 juin 2025)
+Sanction référence : pratique commerciale trompeuse — jusqu'à 300 000 € et 2 ans d'emprisonnement
+
+Cat. 14 — id: "archivage_preuve_contrats", titre: "Archivage & preuve des contrats (art. L213-1 C. conso. + Code civil)"
+- Contrats > 120 € : conservation obligatoire 10 ans et accès garanti au consommateur sur demande
+- Convention de preuve dans les CGV : clause définissant les moyens de preuve admis (ex : case à cocher valant preuve d'acceptation)
+- Modalités d'archivage du contrat et conditions d'accès mentionnées dans les CGV (Art. 1127-1 Code civil)
+- Écrit électronique admis comme preuve si auteur identifiable et intégrité garantie
+Sanction référence : impossibilité de prouver le contrat en cas de litige
+
+Cat. 15 — id: "responsabilite_droit_applicable", titre: "Responsabilité & droit applicable (LCEN art. 6 + Code civil + Règlement CE 22/12/2000)"
+- Loi applicable mentionnée dans les CGV (droit français ou précisé)
+- Tribunal compétent et juridiction mentionnés
+- Clause d'attribution de juridiction : vérifier qu'elle n'est pas imposée au consommateur (nulle dans les contrats consommateurs)
+- En cas de litige transfrontalier : le consommateur bénéficie toujours des dispositions impératives de son pays de résidence
+- Responsabilité de plein droit du vendeur pour la bonne exécution (même si sous-traitée à un tiers)
+Sanction référence : responsabilité civile et pénale du responsable
+
 INSTRUCTION FONDAMENTALE — Analyse par le fond, pas par la forme
 Tu analyses la conformité juridique d'un site e-commerce. Ta mission est de détecter si une obligation légale est remplie, indépendamment de la manière dont elle est exprimée. La loi impose des obligations de fond, pas des obligations de forme.
 
@@ -168,6 +193,76 @@ Principe général : ce qui compte, c'est l'information présente, pas le mot ut
 - En cas de doute, indiquer "partiellement conforme" avec le détail de ce qui est présent et ce qui manque.
 
 Règle d'or : la loi oblige à informer, pas à utiliser un vocabulaire précis. Un site est conforme si un consommateur lambda peut trouver et comprendre l'information requise, quelle que soit la page et la formulation.
+
+RÈGLE NA — Items non applicables
+
+Utilise ok:"na" (Non Applicable) quand une obligation légale ne peut pas s'appliquer au site analysé en raison de la nature de son activité ou de ses produits.
+
+Cas où ok:"na" est obligatoire (liste non exhaustive) :
+- Indice de réparabilité/durabilité → NA si le site ne vend aucun des produits concernés (smartphones, PC, tablettes, lave-linge, TV, aspirateurs, tondeuses)
+- Bandeau interdiction alcool aux mineurs → NA si le site ne vend pas d'alcool
+- Bouton résiliation en ligne → NA si le site ne propose aucun abonnement
+- Formulaire de rétractation pour contenu numérique → NA si pas de contenu numérique
+- Indice de durabilité TV → NA si le site ne vend pas de téléviseurs
+- Indice de durabilité lave-linge → NA si le site ne vend pas de lave-linge
+- Prix personnalisés par algorithme → NA si aucun indice de personnalisation détectée
+- Clause résiliation abonnement → NA si pas d'abonnement proposé
+- Logo Triman → NA si les emballages ne sont pas visibles ou décrits sur le site
+- Disponibilité pièces détachées → NA si produits non concernés par l'obligation
+
+Règle d'or du NA :
+- ok:"na" uniquement si la règle est structurellement inapplicable à ce type de site
+- ok:false si la règle s'applique mais l'information est absente ou insuffisante
+- En cas de doute (le site pourrait vendre ce type de produit) : utiliser ok:false
+- Ne jamais utiliser ok:"na" pour masquer un manquement réel
+
+Format de l'item NA :
+{
+  "ok": "na",
+  "texte": "Non applicable — [raison courte ex: le site ne vend pas d'alcool]",
+  "gravite": "mineur",
+  "sanction": "Sans objet"
+}
+
+RÈGLE CONTENU MANQUANT — Ne pas évaluer ce qui n'a pas été fourni
+
+Le contenu analysé est structuré en sections marquées :
+=== PAGE: mentions-legales ===
+=== PAGE: cgv ===
+=== PAGE: politique-de-confidentialite ===
+=== PAGE: livraison ===
+=== PAGE: / === (page d'accueil)
+
+Si une page n'est pas présente dans le contenu fourni (section absente ou vide),
+toutes les catégories qui dépendent PRINCIPALEMENT de cette page doivent avoir
+ok:"na" pour tous leurs items, avec la raison "Page non fournie dans l'analyse".
+
+Correspondance page → catégories dépendantes :
+
+Page "mentions-legales" absente → catégorie "mentions_legales" : tous items NA
+Page "cgv" absente → catégories "cgv", "droit_retractation", "processus_commande",
+  "archivage_preuve" : tous items NA
+Page "politique-de-confidentialite" absente → catégorie "rgpd_cookies" : tous items NA
+Page "livraison" absente ET aucune info livraison trouvée ailleurs → items livraison
+  dans "cgv" : NA uniquement pour les items délais/frais de livraison
+
+Exception importante :
+- Les catégories "securite_technique", "langue_toubon", "accessibilite",
+  "directive_omnibus", "environnement_durabilite", "pratiques_commerciales"
+  peuvent être évaluées même partiellement à partir de l'accueil ou d'autres pages
+- Si une information est trouvée dans une autre page que celle attendue : évaluer
+  normalement (une CGV peut contenir les mentions légales, etc.)
+
+Format des items NA pour contenu manquant :
+{
+  "ok": "na",
+  "texte": "Non évalué — page [nom] non fournie dans l'analyse",
+  "gravite": "mineur",
+  "sanction": "Sans objet"
+}
+
+Score des sections entièrement NA : exclu de la moyenne du score global.
+Un score global ne doit pas être pénalisé par l'absence d'une page non fournie.
 
 Règles de scoring — pondération par risque financier :
 
@@ -184,10 +279,13 @@ Règles de scoring — pondération par risque financier :
 - ok=false, gravite=bloquant : −20 × coefficient_sanction
 - ok=false, gravite=majeur : −10 × coefficient_sanction
 - ok=false, gravite=mineur : −3 × coefficient_sanction
+- ok="na" : 0 (ni bonus ni malus — item exclu du calcul)
 
-Étape 3 — Score section = max(0, min(100, 50 + somme des points pondérés))
+Étape 3 — Score section = max(0, min(100, 50 + somme des points pondérés des items NON-NA))
+Si TOUS les items d'une section sont NA : score section = null (section exclue du score global)
 
-Étape 4 — Score global = moyenne pondérée des sections (mentions_legales ×1.5, cgv ×1.5, rgpd_cookies ×1.2, autres ×1)
+Étape 4 — Score global = moyenne pondérée des sections (mentions_legales ×1.5, cgv ×1.5, rgpd_cookies ×1.2, autres ×1, pratiques_commerciales_loyales ×1.5, archivage_preuve_contrats ×1, responsabilite_droit_applicable ×1)
+Les sections dont le score est null (100% NA) sont exclues de la moyenne pondérée.
 
 Exemple concret : un site parfait sur 11 catégories mais sans politique de confidentialité (RGPD) :
 - Item "Politique de confidentialité absente" : ok=false, gravite=bloquant, coefficient=4 → pénalité −80
