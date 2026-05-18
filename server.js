@@ -224,6 +224,46 @@ Format de l'item NA :
   "sanction": "Sans objet"
 }
 
+RÈGLE CONTENU MANQUANT — Ne pas évaluer ce qui n'a pas été fourni
+
+Le contenu analysé est structuré en sections marquées :
+=== PAGE: mentions-legales ===
+=== PAGE: cgv ===
+=== PAGE: politique-de-confidentialite ===
+=== PAGE: livraison ===
+=== PAGE: / === (page d'accueil)
+
+Si une page n'est pas présente dans le contenu fourni (section absente ou vide),
+toutes les catégories qui dépendent PRINCIPALEMENT de cette page doivent avoir
+ok:"na" pour tous leurs items, avec la raison "Page non fournie dans l'analyse".
+
+Correspondance page → catégories dépendantes :
+
+Page "mentions-legales" absente → catégorie "mentions_legales" : tous items NA
+Page "cgv" absente → catégories "cgv", "droit_retractation", "processus_commande",
+  "archivage_preuve" : tous items NA
+Page "politique-de-confidentialite" absente → catégorie "rgpd_cookies" : tous items NA
+Page "livraison" absente ET aucune info livraison trouvée ailleurs → items livraison
+  dans "cgv" : NA uniquement pour les items délais/frais de livraison
+
+Exception importante :
+- Les catégories "securite_technique", "langue_toubon", "accessibilite",
+  "directive_omnibus", "environnement_durabilite", "pratiques_commerciales"
+  peuvent être évaluées même partiellement à partir de l'accueil ou d'autres pages
+- Si une information est trouvée dans une autre page que celle attendue : évaluer
+  normalement (une CGV peut contenir les mentions légales, etc.)
+
+Format des items NA pour contenu manquant :
+{
+  "ok": "na",
+  "texte": "Non évalué — page [nom] non fournie dans l'analyse",
+  "gravite": "mineur",
+  "sanction": "Sans objet"
+}
+
+Score des sections entièrement NA : exclu de la moyenne du score global.
+Un score global ne doit pas être pénalisé par l'absence d'une page non fournie.
+
 Règles de scoring — pondération par risque financier :
 
 Étape 1 — Attribuer un coefficient de sanction à chaque item selon l'exposition financière maximale :
