@@ -85,6 +85,8 @@ Cat. 3 — id: "processus_commande", titre: "Processus de commande — Règle du
 - Accusé de réception envoyé par email (récapitulatif, prix, coordonnées vendeur, conditions rétractation)
 - CGV conservables et reproductibles (lien PDF ou version imprimable) — art. 1127-1
 - Commandes > 120 € : conservation du contrat 10 ans — art. L213-1
+- Moyens de paiement acceptés et restrictions de livraison éventuelles affichés au plus tard au début du processus de commande (art. L221-14 C. conso.)
+- Confirmation du contrat sur support durable (email) au plus tard à la livraison, comprenant toutes les informations L221-5 ainsi que le formulaire de rétractation (art. L221-7 C. conso.)
 - À partir du 19 juin 2026 : bouton "un clic pour se rétracter" en ligne obligatoire
 Sanction référence : nullité du contrat possible
 
@@ -95,6 +97,8 @@ Cat. 4 — id: "droit_retractation", titre: "Droit de rétractation (art. L221-1
 - Frais de retour à charge du consommateur : obligatoirement mentionnés + estimation si calculable (sinon frais à charge du professionnel — art. L221-23)
 - Remboursement dans les 14 jours après notification, majorations en cas de retard (art. L221-24)
 - Formulaire type de rétractation fourni conforme à l'Annexe R221-1 (décret n°2022-424) : destinataire, corps de rétractation, champs nom/adresse/date/signature, mention "rayez la mention inutile"
+- Remboursement effectué par le même moyen de paiement que celui utilisé lors de l'achat initial, sauf accord exprès du consommateur et sans frais pour lui (art. L221-24 C. conso.)
+- La rétractation du contrat principal entraîne automatiquement la résiliation de tout contrat accessoire (ex : garantie étendue, financement lié) sans frais pour le consommateur (art. L221-26 C. conso.)
 Sanction référence : délai automatiquement porté à 12 mois + 14 jours si non mentionné (art. L221-20)
 
 Cat. 5 — id: "cgv", titre: "Conditions Générales de Vente (art. L111-1 à L111-8 + L221-5 C. conso.)"
@@ -105,6 +109,10 @@ Cat. 5 — id: "cgv", titre: "Conditions Générales de Vente (art. L111-1 à L1
 - Garantie des vices cachés (art. 1641 C. civil)
 - Médiation de la consommation : lien ou coordonnées d'un médiateur agréé (obligation depuis 2016)
 - Modalités de règlement des litiges (tribunal compétent)
+- Garantie commerciale (si proposée) : document écrit obligatoire précisant le contenu, la durée, l'étendue géographique, les coordonnées du garant, et son caractère non exclusif des garanties légales (art. L217-21 et L217-22 C. conso.) — NA si aucune garantie commerciale n'est proposée
+- Extension automatique de 6 mois de la garantie légale de conformité après toute réparation effectuée sous garantie (art. L217-13 C. conso.)
+- Transfert des risques de perte et d'endommagement : le risque est transféré au consommateur au moment où il prend physiquement possession du bien, même si un tiers transporteur est impliqué (art. L216-4 C. conso. — disposition d'ordre public)
+- Majorations de remboursement en cas de retard de livraison du vendeur : +10 % si retard de 14 jours, +20 % jusqu'à 60 jours, +50 % au-delà (art. L216-2 C. conso.)
 Sanction référence : nullité potentielle du contrat
 
 Cat. 6 — id: "directive_omnibus", titre: "Directive Omnibus (ordonnance n°2021-1734, en vigueur 28 mai 2022)"
@@ -112,6 +120,8 @@ Cat. 6 — id: "directive_omnibus", titre: "Directive Omnibus (ordonnance n°202
 - Avis clients : si avis affichés, mention des mesures de vérification de leur authenticité ("avis vérifiés", "acheteur vérifié"…) — faux avis = pratique commerciale trompeuse
 - Personnalisation des prix : si prix personnalisés selon profil, information claire dans CGV ou politique de confidentialité
 - Classement des résultats de recherche : critères de classement transparents si algorithme utilisé
+- Pour les places de marché (marketplaces) : rubrique spécifique sur les critères de référencement, classement et déréférencement accessible depuis toutes les pages ; indication des liens commerciaux ou rémunérations influençant le classement (art. L111-7 + D111-7 C. conso.) — NA si le site n'est pas une place de marché
+- Prix personnalisé sur la base d'une décision automatisée (profilage) : information précontractuelle distincte obligatoire si applicable (art. L221-5 11° C. conso.) — NA si aucun prix personnalisé par algorithme n'est détecté
 Sanction référence : jusqu'à 2 ans d'emprisonnement et 300 000 € d'amende (prix barrés)
 
 Cat. 7 — id: "environnement_durabilite", titre: "Environnement & durabilité (loi AGEC n°2020-105 + décret n°2024-316)"
